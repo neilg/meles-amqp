@@ -19,18 +19,9 @@
 
 package io.meles.amqp.spring;
 
-import org.iq80.snappy.Snappy;
+public interface Compressor {
 
-public class SnappyCompressor implements Compressor {
+    byte[] compress(byte[] bytes);
 
-    @Override
-    public byte[] compress(final byte[] uncompressedBody) {
-        return Snappy.compress(uncompressedBody);
-    }
-
-    @Override
-    public byte[] decompress(final byte[] bytes) {
-        return Snappy.uncompress(bytes, 0, bytes.length);
-    }
-
+    byte[] decompress(byte[] bytes);
 }

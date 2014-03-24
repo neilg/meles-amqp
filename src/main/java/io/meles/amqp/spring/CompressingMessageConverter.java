@@ -25,20 +25,26 @@ import org.springframework.amqp.support.converter.AbstractMessageConverter;
 import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.amqp.support.converter.MessageConverter;
 
-public class SnappyMessageConverter extends AbstractMessageConverter {
+public class CompressingMessageConverter extends AbstractMessageConverter {
 
     private final MessageConverter underlyingConverter;
-    private final SnappyCompressor compressor;
+    private final Compressor compressor;
+    private final String encodingName;
 
-    public SnappyMessageConverter(final MessageConverter underlyingConverter, SnappyCompressor compressor) {
+    public CompressingMessageConverter(final MessageConverter underlyingConverter, final Compressor compressor, final String encodingName) {
+
         if (underlyingConverter == null) {
             throw new IllegalArgumentException("underlyingConverter must not be null");
         }
         if (compressor == null) {
             throw new IllegalArgumentException("compressor must not be null");
         }
+        if (encodingName == null) {
+            throw new IllegalArgumentException("encodingName must not be null");
+        }
         this.underlyingConverter = underlyingConverter;
         this.compressor = compressor;
+        this.encodingName = encodingName;
     }
 
     @Override
@@ -55,7 +61,7 @@ public class SnappyMessageConverter extends AbstractMessageConverter {
         final MessageProperties uncompressedProperties = messageToCompress.getMessageProperties();
         // TODO 1) should we copy the properties
         // TODO 2) what if there's already an encoding set
-        uncompressedProperties.setContentEncoding("snappy");
+        uncompressedProperties.setContentEncoding(encodingName);
 
         return new Message(compressedBody, uncompressedProperties);
     }
@@ -63,7 +69,7 @@ public class SnappyMessageConverter extends AbstractMessageConverter {
     @Override
     public Object fromMessage(final Message message) throws MessageConversionException {
         final MessageProperties compressedProperties = message.getMessageProperties();
-        if (!"snappy".equals(compressedProperties.getContentEncoding())) {
+        if (!encodingName.equals(compressedProperties.getContentEncoding())) {
             return underlyingConverter.fromMessage(message);
         }
 
