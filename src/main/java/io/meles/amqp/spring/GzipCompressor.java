@@ -53,7 +53,7 @@ public class GzipCompressor implements Compressor {
                 decompressedBytes.write(buffer, 0, bytesRead);
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
 
         return decompressedBytes.toByteArray();
