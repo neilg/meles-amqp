@@ -33,6 +33,8 @@ public class CompressingMessageConverter extends AbstractMessageConverter {
     private final MessageConverter underlyingConverter;
     private final Compressor compressor;
     private final String encodingName;
+    private final Pattern encodingPattern;
+
 
     public CompressingMessageConverter(final MessageConverter underlyingConverter, final Compressor compressor, final String encodingName) {
 
@@ -48,6 +50,7 @@ public class CompressingMessageConverter extends AbstractMessageConverter {
         this.underlyingConverter = underlyingConverter;
         this.compressor = compressor;
         this.encodingName = encodingName;
+        encodingPattern = Pattern.compile("^" + Pattern.quote(encodingName) + "(;(.*))?$");
     }
 
     @Override
@@ -77,8 +80,6 @@ public class CompressingMessageConverter extends AbstractMessageConverter {
     @Override
     public Object fromMessage(final Message message) throws MessageConversionException {
         final MessageProperties compressedProperties = message.getMessageProperties();
-
-        final Pattern encodingPattern = Pattern.compile("^" + Pattern.quote(encodingName) + "(;(.*))?$");
 
         final String contentEncoding = compressedProperties.getContentEncoding();
         final Matcher encodingMatcher = encodingPattern.matcher(contentEncoding);
