@@ -68,7 +68,7 @@ public class CompressingMessageConverter extends AbstractMessageConverter {
         final MessageProperties uncompressedProperties = messageToCompress.getMessageProperties();
         final String existingEncoding = uncompressedProperties.getContentEncoding();
 
-        final String newEncodingName = (existingEncoding == null || existingEncoding.trim().equals("")) ?
+        final String newEncodingName = existingEncoding == null || existingEncoding.trim().equals("") ?
                 encodingName :
                 encodingName + ";" + existingEncoding;
 
