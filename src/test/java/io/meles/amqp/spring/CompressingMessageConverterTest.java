@@ -26,6 +26,7 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
 
 import com.pholser.junit.quickcheck.ForAll;
+import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -133,7 +134,7 @@ public class CompressingMessageConverterTest {
     }
 
     @Test
-    public void shouldOnlyDecompressSnappyEncoding() {
+    public void shouldOnlyDecompressSpecifiedEncoding() {
         final byte[] compressedBody = {1, 3, 5, 3, 3,};
         final MessageProperties properties = new MessageProperties();
         properties.setContentEncoding("this_is_not_an_encoding_we_expect");
@@ -147,4 +148,35 @@ public class CompressingMessageConverterTest {
 
         assertThat(convertedBody, is(sameInstance(resultBody)));
     }
+
+    @Test
+    public void shouldPrependEncoding() {
+        final byte[] underlyingBytes = {1, 2, 3, 4, 5, 6};
+        final MessageProperties properties = new MessageProperties();
+        properties.setContentEncoding("underlying_enc");
+
+        when(converter.toMessage(any(), eq(properties))).thenReturn(new Message(underlyingBytes, properties));
+        when(compressor.compress(underlyingBytes)).thenReturn(new byte[]{1, 2});
+
+        final Message message = compressingMessageConverterUnderTest.createMessage("Hello", properties);
+
+        assertThat(message.getMessageProperties().getContentEncoding(), equalTo(AN_ENCODING + ";underlying_enc"));
+    }
+
+    @Test
+    public void shouldPassOnUnderlyingEncoding() {
+        final byte[] compressedBody = {1, 3, 5, 3, 3,};
+        final MessageProperties properties = new MessageProperties();
+        properties.setContentEncoding(AN_ENCODING + ";another_enc");
+
+        final Object resultBody = new Object();
+        when(converter.fromMessage(any(Message.class))).thenReturn(resultBody);
+
+        final Object convertedBody = compressingMessageConverterUnderTest.fromMessage(new Message(compressedBody, properties));
+
+        verify(converter).fromMessage(argThat(Matchers.<Message>hasProperty("messageProperties", hasProperty("contentEncoding", equalTo("another_enc")))));
+
+        assertThat(convertedBody, is(sameInstance(resultBody)));
+    }
+
 }

@@ -19,6 +19,9 @@
 
 package io.meles.amqp.spring;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.support.converter.AbstractMessageConverter;
@@ -58,10 +61,15 @@ public class CompressingMessageConverter extends AbstractMessageConverter {
             return messageToCompress;
         }
 
+        // TODO should we copy the properties
         final MessageProperties uncompressedProperties = messageToCompress.getMessageProperties();
-        // TODO 1) should we copy the properties
-        // TODO 2) what if there's already an encoding set
-        uncompressedProperties.setContentEncoding(encodingName);
+        final String existingEncoding = uncompressedProperties.getContentEncoding();
+
+        final String newEncodingName = (existingEncoding == null || existingEncoding.trim().equals("")) ?
+                encodingName :
+                encodingName + ";" + existingEncoding;
+
+        uncompressedProperties.setContentEncoding(newEncodingName);
 
         return new Message(compressedBody, uncompressedProperties);
     }
@@ -69,7 +77,13 @@ public class CompressingMessageConverter extends AbstractMessageConverter {
     @Override
     public Object fromMessage(final Message message) throws MessageConversionException {
         final MessageProperties compressedProperties = message.getMessageProperties();
-        if (!encodingName.equals(compressedProperties.getContentEncoding())) {
+
+        final Pattern encodingPattern = Pattern.compile("^" + Pattern.quote(encodingName) + "(;(.*))?$");
+
+        final String contentEncoding = compressedProperties.getContentEncoding();
+        final Matcher encodingMatcher = encodingPattern.matcher(contentEncoding);
+
+        if(!encodingMatcher.matches()) {
             return underlyingConverter.fromMessage(message);
         }
 
@@ -77,7 +91,8 @@ public class CompressingMessageConverter extends AbstractMessageConverter {
         final byte[] decompressedBody = compressor.decompress(compressedBody);
 
         // TODO should we copy the properties
-        compressedProperties.setContentEncoding(null);
+        final String nextEncoding = encodingMatcher.group(2);
+        compressedProperties.setContentEncoding(nextEncoding);
         return underlyingConverter.fromMessage(new Message(decompressedBody, compressedProperties));
     }
 
