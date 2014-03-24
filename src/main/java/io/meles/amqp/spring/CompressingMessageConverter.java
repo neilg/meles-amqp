@@ -83,7 +83,7 @@ public class CompressingMessageConverter extends AbstractMessageConverter {
         final String contentEncoding = compressedProperties.getContentEncoding();
         final Matcher encodingMatcher = encodingPattern.matcher(contentEncoding);
 
-        if(!encodingMatcher.matches()) {
+        if (!encodingMatcher.matches()) {
             return underlyingConverter.fromMessage(message);
         }
 
